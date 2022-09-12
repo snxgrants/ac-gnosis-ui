@@ -69,6 +69,8 @@ function App() {
       alignItems="center"
       size="lg"
       gap="2"
+      bg="gray.900"
+      h="100vh"
     >
       <Heading>Ambassador Council Gnosis Safe</Heading>
       {!(signer && provider) ? (
