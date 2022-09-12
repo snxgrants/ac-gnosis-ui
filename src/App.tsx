@@ -59,7 +59,6 @@ function App() {
     if (signer) {
       const getTxs = await getTransactions();
       const connectedContract = SafeContract.connect(signer);
-      console.log(getTxs[0]);
       executeTx(connectedContract, safeReduceThresholdTx, getTxs[0].signatures);
     }
   };
