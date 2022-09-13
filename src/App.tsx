@@ -14,6 +14,7 @@ import CreateTransaction from './CreateTransaction';
 import { useState } from 'react';
 import {
   buildSafeTransaction,
+  calculateSafeTransactionHash,
   executeTx,
   safeSignMessage,
 } from './utils/execution';
@@ -69,7 +70,7 @@ function App() {
       alignItems="center"
       size="lg"
       gap="2"
-      bg="gray.900"
+      bg="navy.900"
       h="100vh"
     >
       <Heading>Ambassador Council Gnosis Safe</Heading>
