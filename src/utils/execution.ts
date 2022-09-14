@@ -83,11 +83,10 @@ export const preimageSafeTransactionHash = (
 
 export const calculateSafeTransactionHash = (
   safe: Contract,
-  safeTx: SafeTransaction,
-  chainId: BigNumberish
+  safeTx: SafeTransaction
 ): string => {
   return utils._TypedDataEncoder.hash(
-    { verifyingContract: safe.address, chainId },
+    { verifyingContract: safe.address },
     EIP712_SAFE_TX_TYPE,
     safeTx
   );
@@ -114,9 +113,8 @@ export const safeApproveHash = async (
   if (!skipOnChainApproval) {
     if (!signer.provider)
       throw Error('Provider required for on-chain approval');
-    const chainId = (await signer.provider.getNetwork()).chainId;
     const typedDataHash = utils.arrayify(
-      calculateSafeTransactionHash(safe, safeTx, chainId)
+      calculateSafeTransactionHash(safe, safeTx)
     );
     const signerSafe = safe.connect(signer);
     await signerSafe.approveHash(typedDataHash);
@@ -169,11 +167,9 @@ export const signHash = async (
 export const safeSignMessage = async (
   signer: Signer,
   safe: Contract,
-  safeTx: SafeTransaction,
-  chainId?: BigNumberish
+  safeTx: SafeTransaction
 ): Promise<SafeSignature> => {
-  const cid = chainId || (await signer.provider!!.getNetwork()).chainId;
-  return signHash(signer, calculateSafeTransactionHash(safe, safeTx, cid));
+  return signHash(signer, calculateSafeTransactionHash(safe, safeTx));
 };
 
 export const buildSignatureBytes = (signatures: SafeSignature[]): string => {

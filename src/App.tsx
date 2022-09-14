@@ -14,7 +14,6 @@ import CreateTransaction from './CreateTransaction';
 import { useState } from 'react';
 import {
   buildSafeTransaction,
-  calculateSafeTransactionHash,
   executeTx,
   safeSignMessage,
 } from './utils/execution';
@@ -45,8 +44,7 @@ function App() {
       const sig = await safeSignMessage(
         signer,
         SafeContract,
-        safeReduceThresholdTx,
-        10
+        safeReduceThresholdTx
       );
       try {
         await setTransaction(safeReduceThresholdTx, sig);
