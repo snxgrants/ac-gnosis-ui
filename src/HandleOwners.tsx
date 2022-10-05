@@ -31,8 +31,8 @@ export default function HandleOwners() {
     if (signer) {
       const signerAddress = await signer.getAddress();
       const dataTx = SafeContract.interface.encodeFunctionData('removeOwner', [
-        oldAddress,
         signerAddress,
+        oldAddress,
         1,
       ]);
       const safeTransactionData: SafeTransactionDataPartial = {
@@ -48,8 +48,7 @@ export default function HandleOwners() {
         safeTransactionData,
       });
       const signedSafeTransaction = await safeSdk.signTransaction(
-        safeTransaction,
-        'eth_signTypedData'
+        safeTransaction
       );
       safeSdk.executeTransaction(signedSafeTransaction);
     }
