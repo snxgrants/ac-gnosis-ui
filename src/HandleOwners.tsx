@@ -43,6 +43,16 @@ export default function HandleOwners() {
       const safeSdk: Safe = await Safe.create({
         ethAdapter: new EthersAdapter({ ethers, signer }),
         safeAddress: SafeContract.address,
+        contractNetworks: {
+          '10': {
+            multiSendAddress: '0x998739BFdAAdde7C933B942a68053933098f9EDa',
+            multiSendCallOnlyAddress:
+              '0xA1dabEF33b3B82c7814B6D82A79e50F4AC44102B',
+            safeProxyFactoryAddress:
+              '0xC22834581EbC8527d974F8a1c97E1bEA4EF910BC',
+            safeMasterCopyAddress: '0xfb1bffC9d739B8D520DaF37dF666da4C687191EA',
+          },
+        },
       });
       const safeTransaction = await safeSdk.createTransaction({
         safeTransactionData,
