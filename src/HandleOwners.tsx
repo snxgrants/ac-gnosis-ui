@@ -6,8 +6,8 @@ import {
   Input,
   Stack,
 } from '@chakra-ui/react';
-import { BigNumber, ethers } from 'ethers';
-import { useEffect, useState } from 'react';
+import { ethers } from 'ethers';
+import { useState } from 'react';
 import { SafeContract } from './utils/contracts';
 import { useWeb3Context } from './web3.context';
 import Safe from '@gnosis.pm/safe-core-sdk';
@@ -18,33 +18,34 @@ export default function HandleOwners() {
   const { signer } = useWeb3Context();
   const [oldAddress, setOldAddress] = useState('0x');
   const [newAddress, setNewAddress] = useState('0x');
-  const [nonce, setNonce] = useState('0');
-  useEffect(() => {
-    if (signer) {
-      SafeContract.connect(signer)
-        .nonce()
-        .then((nonce: BigNumber) => setNonce(nonce.toString()));
-    }
-  }, []);
 
-  const exec = async () => {
+  const exec = async (addOwner?: boolean) => {
     if (signer) {
-      const toBeRemovedOwner = oldAddress.toLowerCase();
-      const owners: string[] = await SafeContract.connect(signer).getOwners();
-      const index = owners
-        .map((o) => o.toLowerCase())
-        .findIndex((o) => o === toBeRemovedOwner);
-      const dataTx = SafeContract.interface.encodeFunctionData('removeOwner', [
-        !index
-          ? '0x0000000000000000000000000000000000000001'
-          : owners[index - 1],
-        toBeRemovedOwner,
-        1,
-      ]);
+      let dataTx: string;
+      if (!addOwner) {
+        const owners: string[] = await SafeContract.connect(signer).getOwners();
+        const toBeRemovedOwner = oldAddress.toLowerCase();
+        const index = owners
+          .map((o) => o.toLowerCase())
+          .findIndex((o) => o === toBeRemovedOwner);
+        dataTx = SafeContract.interface.encodeFunctionData('removeOwner', [
+          !index
+            ? '0x0000000000000000000000000000000000000001'
+            : owners[index - 1],
+          toBeRemovedOwner,
+          1,
+        ]);
+      } else {
+        dataTx = SafeContract.interface.encodeFunctionData(
+          'addOwnerWithThreshold',
+          [newAddress, 1]
+        );
+      }
+
       const safeTransactionData: SafeTransactionDataPartial = {
         to: SafeContract.address,
         value: '0',
-        data: dataTx,
+        data: dataTx!,
       };
       const safeSdk: Safe = await Safe.create({
         ethAdapter: new EthersAdapter({ ethers, signer }),
@@ -79,15 +80,16 @@ export default function HandleOwners() {
         />
         <FormHelperText>Old Owner Address</FormHelperText>
       </FormControl>
-      {/* <FormControl>
+      <Button onClick={() => exec()}>Remove Owner</Button>
+      <FormControl>
         <FormLabel>New Owner</FormLabel>
         <Input
           value={newAddress}
           onChange={(e) => setNewAddress(e.target.value.trim())}
         />
         <FormHelperText>New Owner Address</FormHelperText>
-      </FormControl> */}
-      <Button onClick={exec}>Execute</Button>
+      </FormControl>
+      <Button onClick={() => exec(true)}>Add New Owner</Button>
     </Stack>
   );
 }

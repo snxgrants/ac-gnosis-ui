@@ -12,9 +12,14 @@ import { useWeb3Context } from './web3.context';
 import TransactionList from './TransactionList';
 import CreateTransaction from './CreateTransaction';
 import HandleOwners from './HandleOwners';
+import { useEffect } from 'react';
 
 function App() {
   const { signer, provider, connect } = useWeb3Context();
+
+  useEffect(() => {
+    localStorage.setItem('chakra-ui-color-mode', 'dark');
+  }, []);
   return (
     <Container
       display="flex"

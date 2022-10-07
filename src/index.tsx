@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
-import { ChakraProvider } from '@chakra-ui/react';
+import { ChakraProvider, ColorModeScript } from '@chakra-ui/react';
 import { theme } from '@synthetixio/v3-theme';
 import { Web3Provider } from './web3.context';
 const root = ReactDOM.createRoot(
@@ -13,6 +13,7 @@ root.render(
   <React.StrictMode>
     <ChakraProvider theme={theme}>
       <Web3Provider>
+        <ColorModeScript initialColorMode={'dark'} />
         <App />
       </Web3Provider>
     </ChakraProvider>
