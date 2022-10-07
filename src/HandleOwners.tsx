@@ -29,10 +29,16 @@ export default function HandleOwners() {
 
   const exec = async () => {
     if (signer) {
-      const signerAddress = await signer.getAddress();
+      const toBeRemovedOwner = oldAddress.toLowerCase();
+      const owners: string[] = await SafeContract.connect(signer).getOwners();
+      const index = owners
+        .map((o) => o.toLowerCase())
+        .findIndex((o) => o === toBeRemovedOwner);
       const dataTx = SafeContract.interface.encodeFunctionData('removeOwner', [
-        signerAddress,
-        oldAddress,
+        !index
+          ? '0x0000000000000000000000000000000000000001'
+          : owners[index - 1],
+        toBeRemovedOwner,
         1,
       ]);
       const safeTransactionData: SafeTransactionDataPartial = {
