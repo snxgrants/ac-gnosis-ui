@@ -13,6 +13,7 @@ import TransactionList from './TransactionList';
 import CreateTransaction from './CreateTransaction';
 import HandleOwners from './HandleOwners';
 import { useEffect } from 'react';
+import { History } from './History';
 
 function App() {
   const { signer, provider, connect } = useWeb3Context();
@@ -51,7 +52,9 @@ function App() {
             <TabPanel>
               <TransactionList />
             </TabPanel>
-            <TabPanel>history</TabPanel>
+            <TabPanel>
+              <History />
+            </TabPanel>
           </TabPanels>
         </Tabs>
       )}

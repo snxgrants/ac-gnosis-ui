@@ -9,6 +9,10 @@ import {
   Wallet,
 } from 'ethers';
 import { TypedDataSigner } from '@ethersproject/abstract-signer';
+import Safe from '@gnosis.pm/safe-core-sdk';
+import EthersAdapter from '@gnosis.pm/safe-ethers-lib';
+import { SafeContract } from './contracts';
+import { ethers, providers } from 'ethers';
 
 export const EIP_DOMAIN = {
   EIP712Domain: [
@@ -322,4 +326,23 @@ export const buildSafeTransaction = (template: {
     refundReceiver: template.refundReceiver || constants.AddressZero,
     nonce: template.nonce,
   };
+};
+
+let safe: Safe;
+
+export const getSafe = async (signer: providers.JsonRpcSigner) => {
+  if (safe) return safe;
+  safe = await Safe.create({
+    ethAdapter: new EthersAdapter({ ethers, signer }),
+    safeAddress: SafeContract.address,
+    contractNetworks: {
+      '10': {
+        multiSendAddress: '0x998739BFdAAdde7C933B942a68053933098f9EDa',
+        multiSendCallOnlyAddress: '0xA1dabEF33b3B82c7814B6D82A79e50F4AC44102B',
+        safeProxyFactoryAddress: '0xC22834581EbC8527d974F8a1c97E1bEA4EF910BC',
+        safeMasterCopyAddress: '0xfb1bffC9d739B8D520DaF37dF666da4C687191EA',
+      },
+    },
+  });
+  return safe;
 };

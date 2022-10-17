@@ -8,14 +8,15 @@ import {
 } from '@chakra-ui/react';
 import { BigNumber } from 'ethers';
 import { useEffect, useState } from 'react';
+import { setTransaction } from './firebase';
 import { SafeContract } from './utils/contracts';
+import { getSafe } from './utils/safe';
 import { useWeb3Context } from './web3.context';
-import { buildSafeTransaction } from './utils/execution';
 
 export default function CreateTransaction() {
   const { signer } = useWeb3Context();
-  const [toAddress, setToAddress] = useState('0x');
-  const [data, setData] = useState('0x');
+  const [toAddress, setToAddress] = useState('');
+  const [data, setData] = useState('');
   const [value, setValue] = useState('0');
   const [operation, setOperation] = useState('0');
   const [nonce, setNonce] = useState('0');
@@ -26,6 +27,22 @@ export default function CreateTransaction() {
         .then((nonce: BigNumber) => setNonce(nonce.toString()));
     }
   }, []);
+
+  const postAndSignTx = async () => {
+    if (signer) {
+      const safe = await getSafe(signer);
+      const safeTx = await safe.createTransaction({
+        safeTransactionData: {
+          nonce: Number(nonce),
+          data: data || '0x',
+          value,
+          to: toAddress,
+        },
+      });
+      const signedTx = await safe.signTransaction(safeTx);
+      setTransaction(signedTx, nonce, false);
+    }
+  };
 
   return (
     <Stack>
@@ -45,7 +62,7 @@ export default function CreateTransaction() {
       <FormControl>
         <FormLabel>Value:</FormLabel>
         <Input value={value} onChange={(e) => setValue(e.target.value)} />
-        <FormHelperText>How much ETH</FormHelperText>
+        <FormHelperText>How much ETH in WEI</FormHelperText>
       </FormControl>
       <FormControl>
         <FormLabel>Operation</FormLabel>
@@ -60,8 +77,9 @@ export default function CreateTransaction() {
         <Input value={nonce} onChange={(e) => setNonce(e.target.value)} />
         <FormHelperText>Contract nonce</FormHelperText>
       </FormControl>
-      <Button>Execute Transaction</Button>
-      <Button>Sign Transaction</Button>
+      <Button onClick={postAndSignTx} disabled={!toAddress}>
+        Create and Sign Transaction
+      </Button>
     </Stack>
   );
 }

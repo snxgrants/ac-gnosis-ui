@@ -6,7 +6,7 @@ import {
   setDoc,
   doc,
 } from 'firebase/firestore/lite';
-import { SafeSignature, SafeTransaction } from './utils/execution';
+import { SafeTransaction } from '@gnosis.pm/safe-core-sdk-types';
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -28,27 +28,15 @@ export const getTransactions = async () => {
 };
 export const setTransaction = async (
   safeTx: SafeTransaction,
-  signature: SafeSignature
+  nonce: string,
+  executed: boolean
 ) => {
   const allTransaction = await getTransactions();
-  const reduceTx = allTransaction[0];
-  if (reduceTx) {
-    if (
-      !reduceTx.signatures.find(
-        (sig: SafeSignature) => sig.signer === signature.signer
-      )
-    ) {
-      return await setDoc(doc(db, 'transactions', 'reduce'), {
-        ...safeTx,
-        signatures: [...reduceTx.signatures, signature],
-      });
-    } else {
-      return new Error('Signature Already Added');
-    }
-  } else {
-    return await setDoc(doc(db, 'transactions', 'reduce'), {
-      ...safeTx,
-      signatures: [signature],
-    });
+  if (allTransaction.filter((a) => a.nonce === nonce).length) {
+    return new Error('nonce already used for a tx');
   }
+  return await setDoc(doc(db, 'transactions', nonce), {
+    ...safeTx,
+    executed,
+  });
 };

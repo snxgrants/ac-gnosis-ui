@@ -6,13 +6,12 @@ import {
   Input,
   Stack,
 } from '@chakra-ui/react';
-import { ethers } from 'ethers';
 import { useState } from 'react';
 import { SafeContract } from './utils/contracts';
 import { useWeb3Context } from './web3.context';
 import Safe from '@gnosis.pm/safe-core-sdk';
-import EthersAdapter from '@gnosis.pm/safe-ethers-lib';
 import { SafeTransactionDataPartial } from '@gnosis.pm/safe-core-sdk-types';
+import { getSafe } from './utils/safe';
 
 export default function HandleOwners() {
   const { signer } = useWeb3Context();
@@ -47,20 +46,7 @@ export default function HandleOwners() {
         value: '0',
         data: dataTx!,
       };
-      const safeSdk: Safe = await Safe.create({
-        ethAdapter: new EthersAdapter({ ethers, signer }),
-        safeAddress: SafeContract.address,
-        contractNetworks: {
-          '10': {
-            multiSendAddress: '0x998739BFdAAdde7C933B942a68053933098f9EDa',
-            multiSendCallOnlyAddress:
-              '0xA1dabEF33b3B82c7814B6D82A79e50F4AC44102B',
-            safeProxyFactoryAddress:
-              '0xC22834581EbC8527d974F8a1c97E1bEA4EF910BC',
-            safeMasterCopyAddress: '0xfb1bffC9d739B8D520DaF37dF666da4C687191EA',
-          },
-        },
-      });
+      const safeSdk: Safe = await getSafe(signer);
       const safeTransaction = await safeSdk.createTransaction({
         safeTransactionData,
       });
