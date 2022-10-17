@@ -2,12 +2,23 @@ import injectedModule from '@web3-onboard/injected-wallets';
 import { ethers } from 'ethers';
 import Onboard from '@web3-onboard/core';
 import { createContext, ReactNode, useContext, useState } from 'react';
+import coinbaseWalletModule from '@web3-onboard/coinbase';
+import walletConnectModule from '@web3-onboard/walletconnect';
+import ledgerModule from '@web3-onboard/ledger';
+import gnosisModule from '@web3-onboard/gnosis';
+import torusModule from '@web3-onboard/torus';
 
 const OPTIMISM_RPC_URL = 'https://mainnet.optimism.io';
 const OPTIMISM_NETWORK_ID = 10;
+const injected = injectedModule();
+const coinbaseWalletSdk = coinbaseWalletModule({ darkMode: true });
+const walletConnect = walletConnectModule();
+const ledger = ledgerModule();
+const gnosis = gnosisModule();
+const torus = torusModule();
 
 const onboard = Onboard({
-  wallets: [injectedModule()],
+  wallets: [injected, ledger, coinbaseWalletSdk, walletConnect, gnosis, torus],
   chains: [
     {
       id: `0x${OPTIMISM_NETWORK_ID.toString(16)}`,
