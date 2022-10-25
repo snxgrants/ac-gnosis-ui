@@ -48,12 +48,11 @@ const useWalletConnect = () => {
     }) => {
       const wcConnector = new WalletConnect({
         uri,
+        bridge: 'https://bridge.walletconnect.org',
         session,
-        storageId: localStorageSessionKey.current,
       });
       setConnector(wcConnector);
       setWcClientData(wcConnector.peerMeta);
-
       wcConnector.on('session_request', (error, payload) => {
         if (error) {
           throw error;
@@ -64,8 +63,8 @@ const useWalletConnect = () => {
               accounts: [s.getAddress()],
               chainId: chain,
             });
+            setWcClientData(payload.params[0].peerMeta);
           });
-          setWcClientData(payload.params[0].peerMeta);
         });
       });
 
@@ -93,7 +92,7 @@ const useWalletConnect = () => {
         wcDisconnect();
       });
     },
-    [safe, wcDisconnect, web3Provider]
+    [safe, wcDisconnect, web3Provider, signer]
   );
 
   useEffect(() => {

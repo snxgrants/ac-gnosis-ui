@@ -61,7 +61,6 @@ function App() {
 
     if (connectionStatus === CONNECTION_STATUS.CONNECTING) {
       const safeApp = findSafeApp(wcClientData.url);
-
       if (!safeApp) {
         setConnectionStatus(CONNECTION_STATUS.CONNECTED);
       }

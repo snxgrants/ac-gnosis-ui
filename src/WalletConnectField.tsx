@@ -31,50 +31,48 @@ const WalletConnectField = ({
     return () => clearTimeout(interval);
   }, [isConnecting]);
 
-  const onPaste = useCallback(
-    (event: React.ClipboardEvent) => {
-      const connectWithUri = (data: string) => {
-        if (data.startsWith('wc:')) {
-          setIsConnecting(true);
+  const onPaste = (event: React.ClipboardEvent) => {
+    const connectWithUri = (data: string) => {
+      if (data.startsWith('wc:')) {
+        setIsConnecting(true);
+        try {
           onConnect({ uri: data });
-        }
-      };
-
-      setInputValue('');
-
-      if (client) {
-        return;
-      }
-
-      const items = event.clipboardData.items;
-
-      for (const index in items) {
-        const item = items[index];
-
-        if (item.kind === 'string' && item.type === 'text/plain') {
-          connectWithUri(event.clipboardData.getData('Text'));
+        } catch (error) {
+          throw error;
         }
       }
-    },
-    [client, onConnect]
-  );
+    };
+
+    setInputValue('');
+    if (client) {
+      return;
+    }
+
+    const items = event.clipboardData.items;
+
+    for (const index in items) {
+      const item = items[index];
+
+      if (item.kind === 'string' && item.type === 'text/plain') {
+        connectWithUri(event.clipboardData.getData('Text'));
+      }
+    }
+  };
 
   if (isConnecting) {
     return <Spinner size="md" />;
   }
 
   return (
-    <>
-      <Input
-        id="wc-uri"
-        name="wc-uri"
-        placeholder="Connection link"
-        value={inputValue}
-        onChange={(e) => setInputValue(e.target.value)}
-        onPaste={onPaste}
-        autoComplete="off"
-      />
-    </>
+    <Input
+      id="wc-uri"
+      name="wc-uri"
+      placeholder="Connection link"
+      value={inputValue}
+      onChange={(e) => setInputValue(e.target.value)}
+      onPaste={onPaste}
+      autoComplete="off"
+    />
   );
 };
 
