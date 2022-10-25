@@ -3,18 +3,23 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
-import { ChakraProvider, ColorModeScript } from '@chakra-ui/react';
+import { ChakraProvider, ColorModeScript, Spinner } from '@chakra-ui/react';
 import { theme } from '@synthetixio/v3-theme';
 import { Web3Provider } from './web3.context';
+import { SafeProvider } from '@gnosis.pm/safe-apps-react-sdk';
+
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
+
 root.render(
   <React.StrictMode>
     <ChakraProvider theme={theme}>
       <Web3Provider>
         <ColorModeScript initialColorMode={'dark'} />
-        <App />
+        <SafeProvider>
+          <App />
+        </SafeProvider>
       </Web3Provider>
     </ChakraProvider>
   </React.StrictMode>

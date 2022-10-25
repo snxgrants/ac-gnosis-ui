@@ -11,7 +11,6 @@ export function History() {
   const [txs, setTxs] = useState<HistoryTransactionState[]>();
   useEffect(() => {
     getTransactions().then((txs) => setTxs(txs as HistoryTransactionState[]));
-    console.log(txs);
   }, []);
   return <Flex></Flex>;
 }
