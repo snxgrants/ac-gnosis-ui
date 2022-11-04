@@ -15,7 +15,7 @@ import { useWeb3Context } from './web3.context';
 import TransactionList from './TransactionList';
 import CreateTransaction from './CreateTransaction';
 import HandleOwners from './HandleOwners';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { History } from './History';
 import { useApps } from './hooks/useApps';
 import useWalletConnect from './hooks/useWalletConnect';
@@ -36,6 +36,7 @@ function App() {
     CONNECTION_STATUS.DISCONNECTED
   );
   const [isNavigatingToSafeApp, setIsNavigatingToSafeApp] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const handleOpenSafeApp = useCallback(
     (url: string) => {
@@ -80,10 +81,11 @@ function App() {
       display="flex"
       flexDirection="column"
       alignItems="center"
-      size="lg"
+      maxW="100vw"
       gap="2"
       bg="navy.900"
       h="100vh"
+      pt="100px"
     >
       <Heading>Ambassador Council Gnosis Safe</Heading>
       {!(signer && provider) ? (
@@ -91,6 +93,7 @@ function App() {
       ) : (
         <Tabs align="center" w="100%">
           <TabList>
+            <Tab>Snapshots</Tab>
             <Tab>Wallet Connect</Tab>
             <Tab>Create Transaction</Tab>
             <Tab>Remove {'&'} Add Owner</Tab>
@@ -98,6 +101,14 @@ function App() {
             <Tab>History</Tab>
           </TabList>
           <TabPanels>
+            <TabPanel>
+              <iframe
+                src="https://snapshot.org/#/opcollective.eth"
+                width="100%"
+                height="500px"
+                ref={iframeRef}
+              />
+            </TabPanel>
             <TabPanel>
               <Box as="main">
                 <Flex flexDirection="column" alignItems="center">

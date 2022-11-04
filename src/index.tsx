@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
-import { ChakraProvider, ColorModeScript, Spinner } from '@chakra-ui/react';
+import { ChakraProvider, ColorModeScript } from '@chakra-ui/react';
 import { theme } from '@synthetixio/v3-theme';
 import { Web3Provider } from './web3.context';
 import { SafeProvider } from '@gnosis.pm/safe-apps-react-sdk';
@@ -17,7 +17,7 @@ root.render(
     <ChakraProvider theme={theme}>
       <Web3Provider>
         <ColorModeScript initialColorMode={'dark'} />
-        <SafeProvider>
+        <SafeProvider opts={{ debug: true }}>
           <App />
         </SafeProvider>
       </Web3Provider>
