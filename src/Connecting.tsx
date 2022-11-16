@@ -1,15 +1,13 @@
-import { Button, Flex, Image, Link, Text } from '@chakra-ui/react';
+import { Flex, Image, Link, Text } from '@chakra-ui/react';
 import { IClientMeta } from '@walletconnect/types';
 
 type ConnectingProps = {
   client: IClientMeta | null;
-  onOpenSafeApp: () => void;
   onKeepUsingWalletConnect: () => void;
 };
 
 const Connecting = ({
   client,
-  onOpenSafeApp,
   onKeepUsingWalletConnect,
 }: ConnectingProps) => {
   if (!client) {
@@ -46,12 +44,6 @@ const Connecting = ({
             {client.name ? client.name : new URL(client.url).hostname}
           </Text>
         </Flex>
-      </Flex>
-
-      <Flex>
-        <Button size="md" colorScheme="cyan" onClick={onOpenSafeApp}>
-          Open Dapp
-        </Button>
       </Flex>
 
       <Flex>

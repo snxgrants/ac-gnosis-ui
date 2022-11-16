@@ -7,7 +7,6 @@ import {
   TabPanel,
   Container,
   Button,
-  Spinner,
   Box,
   Flex,
 } from '@chakra-ui/react';
@@ -15,9 +14,8 @@ import { useWeb3Context } from './web3.context';
 import TransactionList from './TransactionList';
 import CreateTransaction from './CreateTransaction';
 import HandleOwners from './HandleOwners';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { History } from './History';
-import { useApps } from './hooks/useApps';
 import useWalletConnect from './hooks/useWalletConnect';
 import WalletConnectField from './WalletConnectField';
 import Connecting from './Connecting';
@@ -31,21 +29,8 @@ enum CONNECTION_STATUS {
 function App() {
   const { signer, provider, connect } = useWeb3Context();
   const { wcClientData, wcConnect, wcDisconnect } = useWalletConnect();
-  const { openSafeApp, findSafeApp } = useApps();
   const [connectionStatus, setConnectionStatus] = useState(
     CONNECTION_STATUS.DISCONNECTED
-  );
-  const [isNavigatingToSafeApp, setIsNavigatingToSafeApp] = useState(false);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-
-  const handleOpenSafeApp = useCallback(
-    (url: string) => {
-      openSafeApp(url);
-      wcDisconnect();
-      setConnectionStatus(CONNECTION_STATUS.DISCONNECTED);
-      setIsNavigatingToSafeApp(true);
-    },
-    [openSafeApp, wcDisconnect]
   );
 
   useEffect(() => {
@@ -61,20 +46,14 @@ function App() {
     }
 
     if (connectionStatus === CONNECTION_STATUS.CONNECTING) {
-      const safeApp = findSafeApp(wcClientData.url);
-      if (!safeApp) {
         setConnectionStatus(CONNECTION_STATUS.CONNECTED);
-      }
     }
-  }, [connectionStatus, findSafeApp, wcClientData]);
+  }, [connectionStatus, wcClientData]);
 
   useEffect(() => {
     localStorage.setItem('chakra-ui-color-mode', 'dark');
   }, []);
 
-  if (isNavigatingToSafeApp) {
-    return <Spinner size="md" />;
-  }
 
   return (
     <Container
@@ -87,13 +66,12 @@ function App() {
       h="100vh"
       pt="100px"
     >
-      <Heading>Ambassador Council Gnosis Safe</Heading>
+      <Heading>Ambassador Council Safe</Heading>
       {!(signer && provider) ? (
         <Button onClick={connect}>Connect Wallet</Button>
       ) : (
         <Tabs align="center" w="100%">
           <TabList>
-            <Tab>Snapshots</Tab>
             <Tab>Wallet Connect</Tab>
             <Tab>Create Transaction</Tab>
             <Tab>Remove {'&'} Add Owner</Tab>
@@ -101,14 +79,6 @@ function App() {
             <Tab>History</Tab>
           </TabList>
           <TabPanels>
-            <TabPanel>
-              <iframe
-                src="https://snapshot.org/#/opcollective.eth"
-                width="100%"
-                height="500px"
-                ref={iframeRef}
-              />
-            </TabPanel>
             <TabPanel>
               <Box as="main">
                 <Flex flexDirection="column" alignItems="center">
@@ -121,9 +91,6 @@ function App() {
                   {connectionStatus === CONNECTION_STATUS.CONNECTING && (
                     <Connecting
                       client={wcClientData}
-                      onOpenSafeApp={() =>
-                        handleOpenSafeApp(wcClientData?.url || '')
-                      }
                       onKeepUsingWalletConnect={() =>
                         setConnectionStatus(CONNECTION_STATUS.CONNECTED)
                       }
