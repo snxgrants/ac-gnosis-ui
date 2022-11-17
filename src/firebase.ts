@@ -26,6 +26,7 @@ export const getTransactions = async () => {
   const transactionSnapshot = await getDocs(transactionCol);
   return transactionSnapshot.docs.map((doc) => doc.data());
 };
+
 export const setTransaction = async (
   safeTx: SafeTransaction,
   nonce: string,
