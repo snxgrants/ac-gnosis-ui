@@ -6,9 +6,8 @@ import coinbaseWalletModule from '@web3-onboard/coinbase';
 import ledgerModule from '@web3-onboard/ledger';
 import gnosisModule from '@web3-onboard/gnosis';
 import torusModule from '@web3-onboard/torus';
+import { OPTIMISM_NETWORK_ID, OPTIMISM_RPC_URL } from './constants';
 
-const OPTIMISM_RPC_URL = 'https://mainnet.optimism.io';
-const OPTIMISM_NETWORK_ID = 10;
 const injected = injectedModule();
 const coinbaseWalletSdk = coinbaseWalletModule({ darkMode: true });
 const ledger = ledgerModule();
@@ -27,30 +26,20 @@ const onboard = Onboard({
   ],
 });
 export function Web3Provider({ children }: { children: ReactNode }) {
-  const [signer, setSigner] = useState<ethers.providers.JsonRpcSigner | null>(
-    null
-  );
-  const [provider, setProvider] =
-    useState<ethers.providers.Web3Provider | null>(null);
+  const [signer, setSigner] = useState<ethers.providers.JsonRpcSigner | null>(null);
+  const [provider, setProvider] = useState<ethers.providers.Web3Provider | null>(null);
 
   const connect = async () => {
     const wallets = await onboard.connectWallet();
 
     if (wallets[0]) {
-      const ethersProvider = new ethers.providers.Web3Provider(
-        wallets[0].provider,
-        10
-      );
+      const ethersProvider = new ethers.providers.Web3Provider(wallets[0].provider, OPTIMISM_NETWORK_ID);
       setProvider(ethersProvider);
 
       setSigner(ethersProvider.getSigner());
     }
   };
-  return (
-    <Web3Context.Provider value={{ connect, provider, signer }}>
-      {children}
-    </Web3Context.Provider>
-  );
+  return <Web3Context.Provider value={{ connect, provider, signer }}>{children}</Web3Context.Provider>;
 }
 
 interface Web3Context {

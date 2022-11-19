@@ -1,0 +1,6 @@
+const SAFE_ADDRESS = '0x46abFE1C972fCa43766d6aD70E1c1Df72F4Bb4d1';
+const OPTIMISM_RPC_URL = 'https://mainnet.optimism.io';
+const OPTIMISM_NETWORK_ID = 10;
+const WALLETCONNECT_BRIDGE_URL = 'https://bridge.walletconnect.org';
+
+export { OPTIMISM_RPC_URL, OPTIMISM_NETWORK_ID, SAFE_ADDRESS, WALLETCONNECT_BRIDGE_URL };

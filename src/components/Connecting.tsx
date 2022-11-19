@@ -6,21 +6,13 @@ type ConnectingProps = {
   onKeepUsingWalletConnect: () => void;
 };
 
-const Connecting = ({
-  client,
-  onKeepUsingWalletConnect,
-}: ConnectingProps) => {
+const Connecting = ({ client, onKeepUsingWalletConnect }: ConnectingProps) => {
   if (!client) {
     return null;
   }
 
   return (
-    <Flex
-      flexDirection="column"
-      alignItems="center"
-      justifyContent="center"
-      gap={2}
-    >
+    <Flex flexDirection="column" alignItems="center" justifyContent="center" gap={2}>
       <Flex>
         <Text size="xl">
           Trying to connect <Text as="span">{client.name}</Text>
@@ -29,8 +21,7 @@ const Connecting = ({
 
       <Flex>
         <Text>
-          For a better experience use a Safe optimised app. It allows you to
-          operate an app without interruption.
+          For a better experience use a Safe optimised app. It allows you to operate an app without interruption.
         </Text>
       </Flex>
 
@@ -40,9 +31,7 @@ const Connecting = ({
         </Flex>
         <Flex flexDirection="column" gap={1}>
           <Text>SAFE OPTIMISED</Text>
-          <Text size="lg">
-            {client.name ? client.name : new URL(client.url).hostname}
-          </Text>
+          <Text size="lg">{client.name ? client.name : new URL(client.url).hostname}</Text>
         </Flex>
       </Flex>
 

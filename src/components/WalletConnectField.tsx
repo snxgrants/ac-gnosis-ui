@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { IWalletConnectSession, IClientMeta } from '@walletconnect/types';
 import { Input, Spinner } from '@chakra-ui/react';
 
@@ -12,10 +12,7 @@ type WalletConnectFieldProps = {
   onConnect: ({ uri }: WcConnectProps) => Promise<void>;
 };
 
-const WalletConnectField = ({
-  client,
-  onConnect,
-}: WalletConnectFieldProps): React.ReactElement => {
+const WalletConnectField = ({ client, onConnect }: WalletConnectFieldProps): React.ReactElement => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [inputValue, setInputValue] = useState('');
 

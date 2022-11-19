@@ -6,23 +6,18 @@ import reportWebVitals from './reportWebVitals';
 import { ChakraProvider, ColorModeScript } from '@chakra-ui/react';
 import { theme } from '@synthetixio/v3-theme';
 import { Web3Provider } from './web3.context';
-import { SafeProvider } from '@gnosis.pm/safe-apps-react-sdk';
 
-const root = ReactDOM.createRoot(
-  document.getElementById('root') as HTMLElement
-);
+const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
 
 root.render(
   <React.StrictMode>
     <ChakraProvider theme={theme}>
       <Web3Provider>
         <ColorModeScript initialColorMode={'dark'} />
-        <SafeProvider opts={{ debug: true }}>
-          <App />
-        </SafeProvider>
+        <App />
       </Web3Provider>
     </ChakraProvider>
-  </React.StrictMode>
+  </React.StrictMode>,
 );
 
 // If you want to start measuring performance in your app, pass a function

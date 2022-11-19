@@ -1,11 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import {
-  getFirestore,
-  collection,
-  getDocs,
-  setDoc,
-  doc,
-} from 'firebase/firestore/lite';
+import { getFirestore, collection, getDocs, setDoc, doc } from 'firebase/firestore/lite';
 import { SafeTransaction } from '@gnosis.pm/safe-core-sdk-types';
 
 // Your web app's Firebase configuration
@@ -27,11 +21,7 @@ export const getTransactions = async () => {
   return transactionSnapshot.docs.map((doc) => doc.data());
 };
 
-export const setTransaction = async (
-  safeTx: SafeTransaction,
-  nonce: string,
-  executed: boolean
-) => {
+export const setTransaction = async (safeTx: SafeTransaction, nonce: string, executed: boolean) => {
   const allTransaction = await getTransactions();
   if (allTransaction.filter((a) => a.nonce === nonce).length) {
     return new Error('nonce already used for a tx');
