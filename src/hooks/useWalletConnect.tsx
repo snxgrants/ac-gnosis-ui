@@ -1,26 +1,32 @@
-import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import WalletConnect from '@walletconnect/client';
 import { IClientMeta, IWalletConnectSession } from '@walletconnect/types';
 import { getSafe } from '../utils/safe';
 import { useWeb3Context } from '../web3.context';
-import { SAFE_ADDRESS, WALLETCONNECT_BRIDGE_URL } from '../constants';
+import { WALLETCONNECT_BRIDGE_URL } from '../constants';
 
 const rejectWithMessage = (connector: WalletConnect, id: number | undefined, message: string) => {
   connector.rejectRequest({ id, error: { message } });
 };
 
+enum CONNECTION_STATUS {
+  CONNECTED,
+  DISCONNECTED,
+}
+
 const useWalletConnect = () => {
   const { signer } = useWeb3Context();
 
-  const [wcClientData, setWcClientData] = useState<IClientMeta | null>(null);
+  const [wcClientData, setWcClientData] = useState<IClientMeta | undefined>();
   const [connector, setConnector] = useState<WalletConnect | undefined>();
-  const localStorageSessionKey = useRef(`wc_session_${SAFE_ADDRESS}`);
+  const [connectionStatus, setConnectionStatus] = useState(CONNECTION_STATUS.DISCONNECTED);
 
   const wcDisconnect = useCallback(async () => {
     try {
       await connector?.killSession();
       setConnector(undefined);
-      setWcClientData(null);
+      setWcClientData(undefined);
+      setConnectionStatus(CONNECTION_STATUS.DISCONNECTED);
     } catch (error) {
       console.log('Error trying to close WC session: ', error);
     }
@@ -36,7 +42,8 @@ const useWalletConnect = () => {
         session,
       });
       setConnector(wcConnector);
-      setWcClientData(wcConnector.peerMeta);
+      setWcClientData(wcConnector.peerMeta ?? undefined);
+      setConnectionStatus(CONNECTION_STATUS.CONNECTED);
       wcConnector.on('session_request', (error, payload) => {
         if (error) {
           throw error;
@@ -81,14 +88,14 @@ const useWalletConnect = () => {
 
   useEffect(() => {
     if (!connector) {
-      const session = localStorage.getItem(localStorageSessionKey.current);
+      const session = localStorage.getItem('walletconnect');
       if (session) {
         wcConnect({ session: JSON.parse(session) });
       }
     }
   }, [connector, wcConnect]);
 
-  return { wcClientData, wcConnect, wcDisconnect };
+  return { wcClientData, wcConnect, wcDisconnect, connectionStatus };
 };
 
-export default useWalletConnect;
+export { useWalletConnect, CONNECTION_STATUS };

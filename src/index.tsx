@@ -13,7 +13,7 @@ root.render(
   <React.StrictMode>
     <ChakraProvider theme={theme}>
       <Web3Provider>
-        <ColorModeScript initialColorMode={'dark'} />
+        <ColorModeScript initialColorMode="dark" />
         <App />
       </Web3Provider>
     </ChakraProvider>

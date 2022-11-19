@@ -17,7 +17,7 @@ const CreateTransaction = () => {
         .then((safe) => safe.getNonce())
         .then((nonce: number) => setNonce(nonce.toString()));
     }
-  }, []);
+  }, [signer]);
 
   const postAndSignTx = async () => {
     if (signer) {
