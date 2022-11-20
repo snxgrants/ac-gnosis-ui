@@ -2,6 +2,11 @@
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
+## Configuration
+
+The application may be used with any Safe with threshold 1 on any network. For configuring the interface, add an `.env` 
+file in the project root with variables from the `.env.sample` file.
+
 ## Available Scripts
 
 In the project directory, you can run:

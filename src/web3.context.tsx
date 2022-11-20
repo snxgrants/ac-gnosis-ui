@@ -6,7 +6,9 @@ import coinbaseWalletModule from '@web3-onboard/coinbase';
 import ledgerModule from '@web3-onboard/ledger';
 import gnosisModule from '@web3-onboard/gnosis';
 import torusModule from '@web3-onboard/torus';
-import { OPTIMISM_CHAIN_ID, OPTIMISM_RPC_URL } from './constants';
+import { getHexChainId, CHAIN_TOKEN_SYMBOL, CHAIN_NAME, CHAIN_RPC_URL } from './configuration';
+import Safe from '@gnosis.pm/safe-core-sdk';
+import { getSafe } from './utils/safe';
 
 const injected = injectedModule();
 const coinbaseWalletSdk = coinbaseWalletModule({ darkMode: true });
@@ -18,20 +20,39 @@ const onboard = Onboard({
   wallets: [injected, ledger, coinbaseWalletSdk, gnosis, torus],
   chains: [
     {
-      id: `0x${OPTIMISM_CHAIN_ID.toString(16)}`,
-      token: 'ETH',
-      label: 'Optimism Mainnet',
-      rpcUrl: OPTIMISM_RPC_URL,
+      id: getHexChainId(),
+      token: CHAIN_TOKEN_SYMBOL,
+      label: CHAIN_NAME,
+      rpcUrl: CHAIN_RPC_URL,
     },
   ],
 });
+
+export const enum CONNECTION_STATUS {
+  CONNECTED,
+  DISCONNECTED,
+  CONNECTING,
+}
 
 function Web3Provider({ children }: { children: ReactNode }) {
   const [signer, setSigner] = useState<ethers.providers.JsonRpcSigner | null>(null);
   const [provider, setProvider] = useState<ethers.providers.Web3Provider | null>(null);
   const [signerChainId, setSignerChainId] = useState<number>(-1);
+  const [safe, setSafe] = useState<Safe | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState(CONNECTION_STATUS.DISCONNECTED);
 
   useEffect(() => {
+    const state = onboard.state.select('wallets');
+    const { unsubscribe } = state.subscribe((update) => {
+      if (connectionStatus === CONNECTION_STATUS.CONNECTED && update.length === 0) {
+        setConnectionStatus(CONNECTION_STATUS.DISCONNECTED);
+        setSigner(null);
+        setProvider(null);
+        setSafe(null);
+        setSignerChainId(-1);
+      }
+    });
+
     // @ts-expect-error ethers is missing the listener type
     provider?.provider?.on('chainChanged', (chainId: string) => {
       setSignerChainId(parseInt(chainId, 16));
@@ -40,26 +61,43 @@ function Web3Provider({ children }: { children: ReactNode }) {
     return () => {
       // @ts-expect-error ethers is missing the listener type
       provider?.provider?.removeAllListeners('chainChanged');
+
+      // onboard throws an error if you call unsubscribe before it's "ready", seems like a bug
+      try {
+        unsubscribe();
+      } catch (e) {}
     };
-  }, [provider]);
+  }, [provider, connectionStatus]);
 
   const connect = async () => {
+    setConnectionStatus(CONNECTION_STATUS.CONNECTING);
     const wallets = await onboard.connectWallet();
 
     if (wallets[0]) {
-      await onboard.setChain({ chainId: `0x${OPTIMISM_CHAIN_ID.toString(16)}` });
+      await onboard.setChain({ chainId: getHexChainId() });
       try {
         const ethersProvider = new ethers.providers.Web3Provider(wallets[0].provider);
+        const ethersSigner = ethersProvider.getSigner();
         const providerChainId = await wallets[0].provider.request({ method: 'eth_chainId' });
+        const safeSdk = await getSafe(ethersSigner);
+
         setProvider(ethersProvider);
         setSignerChainId(Number(providerChainId));
-        setSigner(ethersProvider.getSigner());
+        setSigner(ethersSigner);
+        setSafe(safeSdk);
+        setConnectionStatus(CONNECTION_STATUS.CONNECTED);
       } catch (err) {
+        setConnectionStatus(CONNECTION_STATUS.DISCONNECTED);
         console.log(`error when connecting: ${err}`);
       }
     }
   };
-  return <Web3Context.Provider value={{ connect, provider, signer, signerChainId }}>{children}</Web3Context.Provider>;
+
+  return (
+    <Web3Context.Provider value={{ connect, provider, signer, signerChainId, safe, connectionStatus }}>
+      {children}
+    </Web3Context.Provider>
+  );
 }
 
 type Web3ContextType = {
@@ -67,6 +105,8 @@ type Web3ContextType = {
   provider: ethers.providers.Web3Provider | null;
   connect: () => Promise<void>;
   signerChainId: number;
+  safe: Safe | null;
+  connectionStatus: CONNECTION_STATUS;
 };
 
 const Web3Context = createContext<Web3ContextType>({
@@ -74,6 +114,8 @@ const Web3Context = createContext<Web3ContextType>({
   provider: null,
   connect: async () => void 0,
   signerChainId: -1,
+  safe: null,
+  connectionStatus: CONNECTION_STATUS.DISCONNECTED,
 });
 
 const useWeb3Context = () => {

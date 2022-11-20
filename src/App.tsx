@@ -1,29 +1,35 @@
-import { Heading, Tabs, TabList, Tab, TabPanels, TabPanel, Container, Button } from '@chakra-ui/react';
+import { Heading, Tabs, TabList, Tab, TabPanels, TabPanel, Container, Button, Spinner } from '@chakra-ui/react';
 import TransactionList from './components/TransactionList';
 import CreateTransaction from './components/CreateTransaction';
 import HandleOwners from './components/HandleOwners';
 import History from './components/History';
-import { useWeb3Context } from './web3.context';
-import { OPTIMISM_CHAIN_ID } from './constants';
+import { useWeb3Context, CONNECTION_STATUS } from './web3.context';
+import { getChainId } from './configuration';
 import SwitchNetworkButton from './components/SwitchNetworkButton';
 import WalletConnectTab from './components/WalletConnectTab';
 
+const chainId = getChainId();
+
 const App = () => {
-  const { signer, signerChainId, provider, connect } = useWeb3Context();
-  const signerWalletNotConnected = !(provider && signer);
-  const wrongSignerNetwork = signerChainId !== -1 && signerChainId !== OPTIMISM_CHAIN_ID;
+  const { signerChainId, connect, connectionStatus } = useWeb3Context();
+  const disconnected = connectionStatus === CONNECTION_STATUS.DISCONNECTED;
+  const wrongSignerNetwork = signerChainId !== -1 && signerChainId !== chainId;
+  const connecting = connectionStatus === CONNECTION_STATUS.CONNECTING;
 
   let content: React.ReactElement;
   switch (true) {
-    case signerWalletNotConnected:
+    case disconnected:
       content = <Button onClick={connect}>Connect Wallet</Button>;
       break;
+    case connecting:
+      content = <Spinner />;
+      break;
     case wrongSignerNetwork:
-      content = <SwitchNetworkButton targetChainId={OPTIMISM_CHAIN_ID} targetNetworkName="Optimism" />;
+      content = <SwitchNetworkButton targetChainId={chainId} targetNetworkName="Optimism" />;
       break;
     default:
       content = (
-        <Tabs align="center" w="100%">
+        <Tabs align="center" w="100%" isLazy>
           <TabList>
             <Tab>Wallet Connect</Tab>
             <Tab>Create Transaction</Tab>
