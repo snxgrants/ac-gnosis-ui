@@ -1,348 +1,139 @@
-import {
-  BigNumber,
-  BigNumberish,
-  constants,
-  Contract,
-  PopulatedTransaction,
-  Signer,
-  utils,
-  Wallet,
-} from 'ethers';
-import { TypedDataSigner } from '@ethersproject/abstract-signer';
 import Safe from '@gnosis.pm/safe-core-sdk';
 import EthersAdapter from '@gnosis.pm/safe-ethers-lib';
-import { SafeContract } from './contracts';
 import { ethers, providers } from 'ethers';
+import { CHAIN_ID, SAFE_ADDRESS } from '../configuration';
+import { areStringsEqual } from './strings';
+import { hashMessage, verifyMessage, isHexString } from 'ethers/lib/utils';
+import { EIP712TypedData } from '../types/eip712';
+import { getEIP712MessageHash } from './eip712';
 
-export const EIP_DOMAIN = {
-  EIP712Domain: [
-    { type: 'uint256', name: 'chainId' },
-    { type: 'address', name: 'verifyingContract' },
-  ],
-};
+// https://docs.gnosis.io/safe/docs/contracts_signatures/#pre-validated-signatures
+const getPreValidatedSignature = (signerAddress: string) =>
+  '0x000000000000000000000000' +
+  signerAddress.slice(2) +
+  '000000000000000000000000000000000000000000000000000000000000000001';
 
-export const EIP712_SAFE_TX_TYPE = {
-  // "SafeTx(address to,uint256 value,bytes data,uint8 operation,uint256 safeTxGas,uint256 baseGas,uint256 gasPrice,address gasToken,address refundReceiver,uint256 nonce)"
-  SafeTx: [
-    { type: 'address', name: 'to' },
-    { type: 'uint256', name: 'value' },
-    { type: 'bytes', name: 'data' },
-    { type: 'uint8', name: 'operation' },
-    { type: 'uint256', name: 'safeTxGas' },
-    { type: 'uint256', name: 'baseGas' },
-    { type: 'uint256', name: 'gasPrice' },
-    { type: 'address', name: 'gasToken' },
-    { type: 'address', name: 'refundReceiver' },
-    { type: 'uint256', name: 'nonce' },
-  ],
-};
-
-export const EIP712_SAFE_MESSAGE_TYPE = {
+const EIP712_SAFE_MESSAGE_TYPE = {
   // "SafeMessage(bytes message)"
   SafeMessage: [{ type: 'bytes', name: 'message' }],
 };
 
-export interface MetaTransaction {
-  to: string;
-  value: string | number | BigNumber;
-  data: string;
-  operation: number;
-}
-
-export interface SafeTransaction extends MetaTransaction {
-  safeTxGas: string | number;
-  baseGas: string | number;
-  gasPrice: string | number;
-  gasToken: string;
-  refundReceiver: string;
-  nonce: string | number;
-}
-
-export interface SafeSignature {
-  signer: string;
-  data: string;
-}
-
-export const calculateSafeDomainSeparator = (
-  safe: Contract,
-  chainId: BigNumberish
-): string => {
-  return utils._TypedDataEncoder.hashDomain({
-    verifyingContract: safe.address,
-    chainId,
-  });
-};
-
-export const preimageSafeTransactionHash = (
-  safe: Contract,
-  safeTx: SafeTransaction,
-  chainId: BigNumberish
-): string => {
-  return utils._TypedDataEncoder.encode(
-    { verifyingContract: safe.address, chainId },
-    EIP712_SAFE_TX_TYPE,
-    safeTx
-  );
-};
-
-export const calculateSafeTransactionHash = (
-  safe: Contract,
-  safeTx: SafeTransaction
-): string => {
-  return utils._TypedDataEncoder.hash(
-    { verifyingContract: safe.address },
-    EIP712_SAFE_TX_TYPE,
-    safeTx
-  );
-};
-
-export const calculateSafeMessageHash = (
-  safe: Contract,
-  message: string,
-  chainId: BigNumberish
-): string => {
-  return utils._TypedDataEncoder.hash(
-    { verifyingContract: safe.address, chainId },
-    EIP712_SAFE_MESSAGE_TYPE,
-    { message }
-  );
-};
-
-export const safeApproveHash = async (
-  signer: Signer,
-  safe: Contract,
-  safeTx: SafeTransaction,
-  skipOnChainApproval?: boolean
-): Promise<SafeSignature> => {
-  if (!skipOnChainApproval) {
-    if (!signer.provider)
-      throw Error('Provider required for on-chain approval');
-    const typedDataHash = utils.arrayify(
-      calculateSafeTransactionHash(safe, safeTx)
-    );
-    const signerSafe = safe.connect(signer);
-    await signerSafe.approveHash(typedDataHash);
-  }
-  const signerAddress = await signer.getAddress();
-  return {
-    signer: signerAddress,
-    data:
-      '0x000000000000000000000000' +
-      signerAddress.slice(2) +
-      '0000000000000000000000000000000000000000000000000000000000000000' +
-      '01',
-  };
-};
-
-export const safeSignTypedData = async (
-  signer: Signer & TypedDataSigner,
-  safe: Contract,
-  safeTx: SafeTransaction,
-  chainId?: BigNumberish
-): Promise<SafeSignature> => {
-  if (!chainId && !signer.provider)
-    throw Error('Provider required to retrieve chainId');
-  const cid = chainId || (await signer.provider!!.getNetwork()).chainId;
-  const signerAddress = await signer.getAddress();
-  return {
-    signer: signerAddress,
-    data: await signer._signTypedData(
-      { verifyingContract: safe.address, chainId: cid },
-      EIP712_SAFE_TX_TYPE,
-      safeTx
-    ),
-  };
-};
-
-export const signHash = async (
-  signer: Signer,
-  hash: string
-): Promise<SafeSignature> => {
-  const typedDataHash = utils.arrayify(hash);
-  const signerAddress = await signer.getAddress();
-  return {
-    signer: signerAddress,
-    data: (await signer.signMessage(typedDataHash))
-      .replace(/1b$/, '1f')
-      .replace(/1c$/, '20'),
-  };
-};
-
-export const safeSignMessage = async (
-  signer: Signer,
-  safe: Contract,
-  safeTx: SafeTransaction
-): Promise<SafeSignature> => {
-  return signHash(signer, calculateSafeTransactionHash(safe, safeTx));
-};
-
-export const buildSignatureBytes = (signatures: SafeSignature[]): string => {
-  signatures.sort((left, right) =>
-    left.signer.toLowerCase().localeCompare(right.signer.toLowerCase())
-  );
-  let signatureBytes = '0x';
-  for (const sig of signatures) {
-    signatureBytes += sig.data.slice(2);
-  }
-  return signatureBytes;
-};
-
-export const logGas = async (
-  message: string,
-  tx: Promise<any>,
-  skip?: boolean
-): Promise<any> => {
-  return tx.then(async (result) => {
-    const receipt = await result.wait();
-    if (!skip)
-      console.log(
-        '           Used',
-        receipt.gasUsed.toNumber(),
-        `gas for >${message}<`
-      );
-    return result;
-  });
-};
-
-export const executeTx = async (
-  safe: Contract,
-  safeTx: SafeTransaction,
-  signatures: SafeSignature[],
-  overrides?: any
-): Promise<any> => {
-  const signatureBytes = buildSignatureBytes(signatures);
-  return safe.execTransaction(
-    safeTx.to,
-    safeTx.value,
-    safeTx.data,
-    safeTx.operation,
-    safeTx.safeTxGas,
-    safeTx.baseGas,
-    safeTx.gasPrice,
-    safeTx.gasToken,
-    safeTx.refundReceiver,
-    signatureBytes,
-    overrides || {}
-  );
-};
-
-export const populateExecuteTx = async (
-  safe: Contract,
-  safeTx: SafeTransaction,
-  signatures: SafeSignature[],
-  overrides?: any
-): Promise<PopulatedTransaction> => {
-  const signatureBytes = buildSignatureBytes(signatures);
-  return safe.populateTransaction.execTransaction(
-    safeTx.to,
-    safeTx.value,
-    safeTx.data,
-    safeTx.operation,
-    safeTx.safeTxGas,
-    safeTx.baseGas,
-    safeTx.gasPrice,
-    safeTx.gasToken,
-    safeTx.refundReceiver,
-    signatureBytes,
-    overrides || {}
-  );
-};
-
-export const buildContractCall = (
-  contract: Contract,
-  method: string,
-  params: any[],
-  nonce: number,
-  delegateCall?: boolean,
-  overrides?: Partial<SafeTransaction>
-): SafeTransaction => {
-  const data = contract.interface.encodeFunctionData(method, params);
-  return buildSafeTransaction(
-    Object.assign(
-      {
-        to: contract.address,
-        data,
-        operation: delegateCall ? 1 : 0,
-        nonce,
-      },
-      overrides
-    )
-  );
-};
-
-export const executeTxWithSigners = async (
-  safe: Contract,
-  tx: SafeTransaction,
-  signers: Wallet[],
-  overrides?: any
-) => {
-  const sigs = await Promise.all(
-    signers.map((signer) => safeSignTypedData(signer, safe, tx))
-  );
-  return executeTx(safe, tx, sigs, overrides);
-};
-
-export const executeContractCallWithSigners = async (
-  safe: Contract,
-  contract: Contract,
-  method: string,
-  params: any[],
-  signers: Wallet[],
-  delegateCall?: boolean,
-  overrides?: Partial<SafeTransaction>
-) => {
-  const tx = buildContractCall(
-    contract,
-    method,
-    params,
-    await safe.nonce(),
-    delegateCall,
-    overrides
-  );
-  return executeTxWithSigners(safe, tx, signers);
-};
-
-export const buildSafeTransaction = (template: {
-  to: string;
-  value?: BigNumber | number | string;
-  data?: string;
-  operation?: number;
-  safeTxGas?: number | string;
-  baseGas?: number | string;
-  gasPrice?: number | string;
-  gasToken?: string;
-  refundReceiver?: string;
-  nonce: number;
-}): SafeTransaction => {
-  return {
-    to: template.to,
-    value: template.value || 0,
-    data: template.data || '0x',
-    operation: template.operation || 0,
-    safeTxGas: template.safeTxGas || 0,
-    baseGas: template.baseGas || 0,
-    gasPrice: template.gasPrice || 0,
-    gasToken: template.gasToken || constants.AddressZero,
-    refundReceiver: template.refundReceiver || constants.AddressZero,
-    nonce: template.nonce,
-  };
-};
-
-let safe: Safe;
-
-export const getSafe = async (signer: providers.JsonRpcSigner) => {
-  if (safe) return safe;
-  safe = await Safe.create({
-    ethAdapter: new EthersAdapter({ ethers, signer }),
-    safeAddress: SafeContract.address,
+const getSafe = async (signer: providers.JsonRpcSigner) =>
+  await Safe.create({
+    ethAdapter: new EthersAdapter({ ethers, signerOrProvider: signer }),
+    safeAddress: SAFE_ADDRESS,
     contractNetworks: {
       '10': {
         multiSendAddress: '0x998739BFdAAdde7C933B942a68053933098f9EDa',
         multiSendCallOnlyAddress: '0xA1dabEF33b3B82c7814B6D82A79e50F4AC44102B',
         safeProxyFactoryAddress: '0xC22834581EbC8527d974F8a1c97E1bEA4EF910BC',
         safeMasterCopyAddress: '0xfb1bffC9d739B8D520DaF37dF666da4C687191EA',
+        createCallAddress: '0xB19D6FFc2182150F8Eb585b79D4ABcd7C5640A9d',
+        signMessageLibAddress: '0x98FFBBF51bb33A056B08ddf711f289936AafF717',
+        fallbackHandlerAddress: '0x017062a1dE2FE6b99BE3d9d37841FeD19F573804',
       },
     },
   });
-  return safe;
+
+type AdjustVOverload = {
+  (signingMethod: 'eth_signTypedData', signature: string): string;
+  (signingMethod: 'eth_sign', signature: string, safeTxHash: string, sender: string): string;
+};
+
+const isSignedWithEIP191Prefix = (hexMessage: string, signature: string, ownerAddress: string): boolean => {
+  let hasPrefix;
+  try {
+    const recoveredAddress = verifyMessage(hexMessage, signature);
+    hasPrefix = !areStringsEqual(recoveredAddress, ownerAddress);
+  } catch (e) {
+    hasPrefix = true;
+  }
+  return hasPrefix;
+};
+
+const adjustSignatureVbyte: AdjustVOverload = (
+  signingMethod: 'eth_sign' | 'eth_signTypedData',
+  signature: string,
+  safeTxHash?: string,
+  signerAddress?: string,
+): string => {
+  const ETHEREUM_V_VALUES = [0, 1, 27, 28];
+  const MIN_VALID_V_VALUE_FOR_SAFE_ECDSA = 27;
+  let signatureV = parseInt(signature.slice(-2), 16);
+  if (!ETHEREUM_V_VALUES.includes(signatureV)) {
+    throw new Error('Invalid signature');
+  }
+  if (signingMethod === 'eth_sign') {
+    /*
+      The Safe's expected V value for ECDSA signature is:
+      - 27 or 28
+      - 31 or 32 if the message was signed with a EIP-191 prefix. Should be calculated as ECDSA V value + 4
+      Some wallets do that, some wallets don't, V > 30 is used by contracts to differentiate between
+      prefixed and non-prefixed messages. The only way to know if the message was signed with a
+      prefix is to check if the signer address is the same as the recovered address.
+      More info:
+      https://docs.gnosis-safe.io/contracts/signatures
+    */
+    if (signatureV < MIN_VALID_V_VALUE_FOR_SAFE_ECDSA) {
+      signatureV += MIN_VALID_V_VALUE_FOR_SAFE_ECDSA;
+    }
+    const adjustedSignature = signature.slice(0, -2) + signatureV.toString(16);
+    const signatureHasPrefix = isSignedWithEIP191Prefix(
+      safeTxHash as string,
+      adjustedSignature,
+      signerAddress as string,
+    );
+    if (signatureHasPrefix) {
+      signatureV += 4;
+    }
+  }
+  if (signingMethod === 'eth_signTypedData') {
+    // Metamask with ledger returns V=0/1 here too, we need to adjust it to be ethereum's valid value (27 or 28)
+    if (signatureV < MIN_VALID_V_VALUE_FOR_SAFE_ECDSA) {
+      signatureV += MIN_VALID_V_VALUE_FOR_SAFE_ECDSA;
+    }
+  }
+  signature = signature.slice(0, -2) + signatureV.toString(16);
+  return signature;
+};
+
+const safeSignMessage = async (
+  signer: providers.JsonRpcSigner,
+  safeAddress: string,
+  message: string,
+): Promise<string> => {
+  const hashedMessage = isHexString(message) ? message : hashMessage(message);
+
+  const signature = await signer._signTypedData(
+    {
+      chainId: CHAIN_ID,
+      verifyingContract: safeAddress,
+    },
+    EIP712_SAFE_MESSAGE_TYPE,
+    {
+      message: hashedMessage,
+    },
+  );
+
+  return adjustSignatureVbyte('eth_signTypedData', signature);
+};
+
+const safeSignTypedMessage = async (
+  signer: providers.JsonRpcSigner,
+  safeAddress: string,
+  typedData: EIP712TypedData | string,
+): Promise<string> => {
+  const typedDataHash = getEIP712MessageHash(typedData);
+
+  const signature = await safeSignMessage(signer, safeAddress, typedDataHash);
+  return signature;
+};
+
+export {
+  EIP712_SAFE_MESSAGE_TYPE,
+  adjustSignatureVbyte,
+  getSafe,
+  getPreValidatedSignature,
+  safeSignMessage,
+  safeSignTypedMessage,
 };

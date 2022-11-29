@@ -1,76 +1,35 @@
-import {
-  Heading,
-  Tabs,
-  TabList,
-  Tab,
-  TabPanels,
-  TabPanel,
-  Container,
-  Button,
-  Box,
-  Flex,
-} from '@chakra-ui/react';
-import { useWeb3Context } from './web3.context';
-import TransactionList from './TransactionList';
-import CreateTransaction from './CreateTransaction';
-import HandleOwners from './HandleOwners';
-import { useEffect, useState } from 'react';
-import { History } from './History';
-import useWalletConnect from './hooks/useWalletConnect';
-import WalletConnectField from './WalletConnectField';
-import Connecting from './Connecting';
+import { Heading, Tabs, TabList, Tab, TabPanels, TabPanel, Container, Button, Spinner } from '@chakra-ui/react';
+import TransactionList from './components/TransactionList';
+import CreateTransaction from './components/CreateTransaction';
+import HandleOwners from './components/HandleOwners';
+import History from './components/History';
+import { useWeb3Context, CONNECTION_STATUS } from './web3.context';
+import { getChainId } from './configuration';
+import SwitchNetworkButton from './components/SwitchNetworkButton';
+import WalletConnectTab from './components/WalletConnectTab';
 
-enum CONNECTION_STATUS {
-  CONNECTED,
-  DISCONNECTED,
-  CONNECTING,
-}
+const chainId = getChainId();
 
-function App() {
-  const { signer, provider, connect } = useWeb3Context();
-  const { wcClientData, wcConnect, wcDisconnect } = useWalletConnect();
-  const [connectionStatus, setConnectionStatus] = useState(
-    CONNECTION_STATUS.DISCONNECTED
-  );
+const App = () => {
+  const { signerChainId, connect, connectionStatus } = useWeb3Context();
+  const disconnected = connectionStatus === CONNECTION_STATUS.DISCONNECTED;
+  const wrongSignerNetwork = signerChainId !== -1 && signerChainId !== chainId;
+  const connecting = connectionStatus === CONNECTION_STATUS.CONNECTING;
 
-  useEffect(() => {
-    if (wcClientData) {
-      setConnectionStatus(CONNECTION_STATUS.CONNECTING);
-    }
-  }, [wcClientData]);
-
-  useEffect(() => {
-    if (!wcClientData) {
-      setConnectionStatus(CONNECTION_STATUS.DISCONNECTED);
-      return;
-    }
-
-    if (connectionStatus === CONNECTION_STATUS.CONNECTING) {
-        setConnectionStatus(CONNECTION_STATUS.CONNECTED);
-    }
-  }, [connectionStatus, wcClientData]);
-
-  useEffect(() => {
-    localStorage.setItem('chakra-ui-color-mode', 'dark');
-  }, []);
-
-
-  return (
-    <Container
-      display="flex"
-      flexDirection="column"
-      alignItems="center"
-      maxW="100vw"
-      gap="2"
-      bg="navy.900"
-      h="100vh"
-      pt="100px"
-    >
-      <Heading>Ambassador Council Safe</Heading>
-      {!(signer && provider) ? (
-        <Button onClick={connect}>Connect Wallet</Button>
-      ) : (
-        <Tabs align="center" w="100%">
+  let content: React.ReactElement;
+  switch (true) {
+    case disconnected:
+      content = <Button onClick={connect}>Connect Wallet</Button>;
+      break;
+    case connecting:
+      content = <Spinner />;
+      break;
+    case wrongSignerNetwork:
+      content = <SwitchNetworkButton targetChainId={chainId} targetNetworkName="Optimism" />;
+      break;
+    default:
+      content = (
+        <Tabs align="center" w="100%" isLazy>
           <TabList>
             <Tab>Wallet Connect</Tab>
             <Tab>Create Transaction</Tab>
@@ -80,39 +39,7 @@ function App() {
           </TabList>
           <TabPanels>
             <TabPanel>
-              <Box as="main">
-                <Flex flexDirection="column" alignItems="center">
-                  {connectionStatus === CONNECTION_STATUS.DISCONNECTED && (
-                    <WalletConnectField
-                      client={wcClientData}
-                      onConnect={(data) => wcConnect(data)}
-                    />
-                  )}
-                  {connectionStatus === CONNECTION_STATUS.CONNECTING && (
-                    <Connecting
-                      client={wcClientData}
-                      onKeepUsingWalletConnect={() =>
-                        setConnectionStatus(CONNECTION_STATUS.CONNECTED)
-                      }
-                    />
-                  )}
-                  {connectionStatus === CONNECTION_STATUS.CONNECTED && (
-                    <Box>
-                      Connected
-                      <br />
-                      <Button
-                        onClick={() => {
-                          setConnectionStatus(CONNECTION_STATUS.DISCONNECTED);
-                          wcDisconnect();
-                        }}
-                        colorScheme="cyan"
-                      >
-                        Disconnect
-                      </Button>
-                    </Box>
-                  )}
-                </Flex>
-              </Box>
+              <WalletConnectTab />
             </TabPanel>
             <TabPanel>
               <CreateTransaction />
@@ -128,9 +55,24 @@ function App() {
             </TabPanel>
           </TabPanels>
         </Tabs>
-      )}
+      );
+  }
+
+  return (
+    <Container
+      display="flex"
+      flexDirection="column"
+      alignItems="center"
+      maxW="100vw"
+      gap="2"
+      bg="navy.900"
+      h="100vh"
+      pt="100px"
+    >
+      <Heading>Ambassador Council Safe</Heading>
+      {content}
     </Container>
   );
-}
+};
 
 export default App;

@@ -1,6 +1,6 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState } from 'react';
 import { IWalletConnectSession, IClientMeta } from '@walletconnect/types';
-import { Input, Spinner } from '@chakra-ui/react';
+import { Input } from '@chakra-ui/react';
 
 type WcConnectProps = {
   uri?: string | undefined;
@@ -8,38 +8,17 @@ type WcConnectProps = {
 };
 
 type WalletConnectFieldProps = {
-  client: IClientMeta | null;
+  client?: IClientMeta;
   onConnect: ({ uri }: WcConnectProps) => Promise<void>;
 };
 
-const WalletConnectField = ({
-  client,
-  onConnect,
-}: WalletConnectFieldProps): React.ReactElement => {
-  const [isConnecting, setIsConnecting] = useState(false);
+const WalletConnectField = ({ client, onConnect }: WalletConnectFieldProps): React.ReactElement => {
   const [inputValue, setInputValue] = useState('');
-
-  // WalletConnect does not provide a loading/connecting status
-  // This effects simulates a connecting status, and prevents
-  // the user to initiate two connections in simultaneous.
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isConnecting) {
-      interval = setTimeout(() => setIsConnecting(false), 2_000);
-    }
-
-    return () => clearTimeout(interval);
-  }, [isConnecting]);
 
   const onPaste = (event: React.ClipboardEvent) => {
     const connectWithUri = (data: string) => {
       if (data.startsWith('wc:')) {
-        setIsConnecting(true);
-        try {
-          onConnect({ uri: data });
-        } catch (error) {
-          throw error;
-        }
+        onConnect({ uri: data });
       }
     };
 
@@ -58,10 +37,6 @@ const WalletConnectField = ({
       }
     }
   };
-
-  if (isConnecting) {
-    return <Spinner size="md" />;
-  }
 
   return (
     <Input

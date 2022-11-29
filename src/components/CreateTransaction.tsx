@@ -1,19 +1,10 @@
-import {
-  FormControl,
-  FormLabel,
-  Input,
-  FormHelperText,
-  Stack,
-  Button,
-} from '@chakra-ui/react';
-import { BigNumber } from 'ethers';
+import { FormControl, FormLabel, Input, FormHelperText, Stack, Button } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
-import { setTransaction } from './firebase';
-import { SafeContract } from './utils/contracts';
-import { getSafe } from './utils/safe';
-import { useWeb3Context } from './web3.context';
+import { setTransaction } from '../firebase';
+import { getSafe } from '../utils/safe';
+import { useWeb3Context } from '../web3.context';
 
-export default function CreateTransaction() {
+const CreateTransaction = () => {
   const { signer } = useWeb3Context();
   const [toAddress, setToAddress] = useState('');
   const [data, setData] = useState('');
@@ -22,11 +13,11 @@ export default function CreateTransaction() {
   const [nonce, setNonce] = useState('0');
   useEffect(() => {
     if (signer) {
-      SafeContract.connect(signer)
-        .nonce()
-        .then((nonce: BigNumber) => setNonce(nonce.toString()));
+      getSafe(signer)
+        .then((safe) => safe.getNonce())
+        .then((nonce: number) => setNonce(nonce.toString()));
     }
-  }, []);
+  }, [signer]);
 
   const postAndSignTx = async () => {
     if (signer) {
@@ -48,10 +39,7 @@ export default function CreateTransaction() {
     <Stack>
       <FormControl>
         <FormLabel>To:</FormLabel>
-        <Input
-          value={toAddress}
-          onChange={(e) => setToAddress(e.target.value)}
-        />
+        <Input value={toAddress} onChange={(e) => setToAddress(e.target.value)} />
         <FormHelperText>Contract Address</FormHelperText>
       </FormControl>
       <FormControl>
@@ -66,20 +54,19 @@ export default function CreateTransaction() {
       </FormControl>
       <FormControl>
         <FormLabel>Operation</FormLabel>
-        <Input
-          value={operation}
-          onChange={(e) => setOperation(e.target.value)}
-        />
+        <Input value={operation} onChange={(e) => setOperation(e.target.value)} />
         <FormHelperText>For Delegate call set it to 1</FormHelperText>
       </FormControl>
       <FormControl>
         <FormLabel>Nonce:</FormLabel>
         <Input value={nonce} onChange={(e) => setNonce(e.target.value)} />
-        <FormHelperText>Contract nonce</FormHelperText>
+        <FormHelperText>Safe nonce</FormHelperText>
       </FormControl>
       <Button onClick={postAndSignTx} disabled={!toAddress}>
         Create and Sign Transaction
       </Button>
     </Stack>
   );
-}
+};
+
+export default CreateTransaction;
