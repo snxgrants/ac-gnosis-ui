@@ -41,7 +41,7 @@ const WalletConnectTab = () => {
         const [tx] = pendingRequest.params;
         const { to, data, value } = tx;
         const safeTransaction = await safe.createTransaction({
-          safeTransactionData: { to, data, value: value || 0 },
+          safeTransactionData: { to, data, value: !!value ? value : 0 },
           onlyCalls: true,
         });
         const signerAddress = await signer.getAddress();
