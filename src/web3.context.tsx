@@ -6,6 +6,7 @@ import coinbaseWalletModule from '@web3-onboard/coinbase';
 import ledgerModule from '@web3-onboard/ledger';
 import gnosisModule from '@web3-onboard/gnosis';
 import torusModule from '@web3-onboard/torus';
+import walletConnect from '@web3-onboard/walletconnect';
 import { getHexChainId, CHAIN_TOKEN_SYMBOL, CHAIN_NAME, CHAIN_RPC_URL } from './configuration';
 import Safe from '@gnosis.pm/safe-core-sdk';
 import { getSafe } from './utils/safe';
@@ -15,9 +16,10 @@ const coinbaseWalletSdk = coinbaseWalletModule({ darkMode: true });
 const ledger = ledgerModule();
 const gnosis = gnosisModule();
 const torus = torusModule();
+const walletconnect = walletConnect();
 
 const onboard = Onboard({
-  wallets: [injected, ledger, coinbaseWalletSdk, gnosis, torus],
+  wallets: [injected, ledger, coinbaseWalletSdk, gnosis, torus, walletconnect],
   chains: [
     {
       id: getHexChainId(),
